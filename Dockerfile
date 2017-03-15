@@ -8,7 +8,7 @@
 # To build your container:
 #
 # # git clone https://github.com/xme/misp-docker
-# # docker build -t <tag> --build-arg MYSQL_ROOT_PASSWORD=<mysql_root_pw> .
+# # docker build -t <tag> .
 
 # We are based on Ubuntu:16.04
 FROM ubuntu:16.04
@@ -16,7 +16,6 @@ MAINTAINER Xavier Mertens <xavier@rootshell.be>
 
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
-ARG MYSQL_ROOT_PASSWORD
 
 RUN echo "DEBUG"
 # Upgrade Ubuntu
@@ -39,8 +38,6 @@ RUN \
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Preconfigure setting for packages
-RUN echo "mysql-server mysql-server/root_password password $MYSQL_ROOT_PASSWORD" | debconf-set-selections
-RUN echo "mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD" | debconf-set-selections
 #RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections 
 #RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
 

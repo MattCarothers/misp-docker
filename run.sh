@@ -22,12 +22,24 @@ if [ -r /.firstboot.tmp ]; then
 		echo "MYSQL_MISP_PASSWORD is set to '$MYSQL_MISP_PASSWORD'"
 	fi
 
+	# Initialize the MySQL database directory if needed.  It will be empty
+	# if the container was started with -v <some dir>:/var/lib/mysql
+	if [ ! -d /var/lib/mysql/mysql ]; then
+		echo "Initializing database ..."
+		mysqld --initialize-insecure
+	fi
+	
 	# Create a database and user  
-	echo "Connecting to database ..."
+	echo "Connecting to database and setting passwords ..."
+	service mysql start
 
-	# Ugly but we need MySQL temporary up for the setup phase...
-	service mysql start >/dev/null 2>&1
-	sleep 5
+	# If the MySQL root password is empty, this is a fresh install, and we need to set it
+	mysqladmin password $MYSQL_ROOT_PASSWORD >/dev/null 2>&1 | true
+
+	# Add the debian-sys-maint user so init scripts and log rotation will work.  This
+	# step is redundant if we didn't just create a new database, but it doesn't hurt.
+	SYS_MAINT_PASSWORD=`grep -m 1 password /etc/mysql/debian.cnf | awk '{print $3}'`
+	mysql -u root --password="$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$SYS_MAINT_PASSWORD' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
 	ret=`echo 'SHOW DATABASES;' | mysql -u root --password="$MYSQL_ROOT_PASSWORD" -h 127.0.0.1 -P 3306 # 2>&1`
 
@@ -70,6 +82,10 @@ EOSQL
 		echo "ERROR: Connecting to database failed:"
 		echo $ret
 	fi
+
+	# Stop the MySQL server here because we're going to let
+	# supervisord manage the process instead.
+	service mysql stop
 
 	# MISP configuration
 	echo "Creating MISP configuration files ..."
