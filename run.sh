@@ -101,14 +101,6 @@ EOSQL
 	chown -R www-data:www-data /var/www/MISP/app/Config
 	chmod -R 750 /var/www/MISP/app/Config
 
-	# Fix the base url
-	if [ -z "$MISP_BASEURL" ]; then
-		echo "No base URL defined, don't forget to define it manually!"
-	else
-		echo "Fixing the MISP base URL ($MISP_BASEURL) ..."
-		sed -i "s/'baseurl' => '',/'baseurl' => '$MISP_BASEURL',/" /var/www/MISP/app/Config/config.php
-	fi
-
 	# Fix php.ini with recommended settings
 	echo "Optimizing php.ini (based on MISP recommendations) ..."
 	sed -i "s/max_execution_time = 30/max_execution_time = 300/" /etc/php/7.0/apache2/php.ini
@@ -135,6 +127,22 @@ GPGEOF
 		sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >/dev/null 2>&1
 		rm -f /tmp/gpg.tmp
 	fi
+	echo "Setting default server configuration"
+	echo '<?php
+include "/var/www/MISP/app/Config/config.default.php";
+$config["MISP"]["baseurl"] = $_SERVER["MISP_BASEURL"];
+$config["GnuPG"]["email"] = $_SERVER["MISP_ADMIN_EMAIL"];
+$config["GnuPG"]["password"] = $_SERVER["MISP_ADMIN_PASSPHRASE"];
+$config["GnuPG"]["homedir"] = "/var/www/MISP/.gnupg";
+$config["Plugin"]["ZeroMQ_enable"] = true;
+$config["Plugin"]["Enrichment_services_enable"] = true;
+$config["Plugin"]["Import_services_enable"] = true;
+$config["Plugin"]["Export_services_enable"] = true;
+print "<?php\n\$config = ";
+print var_export($config);
+print ";\n";
+' > /tmp/setup.php
+	/usr/bin/php /tmp/setup.php > /var/www/MISP/app/Config/config.php
 
 	# Display tips
 	cat <<__WELCOME__
