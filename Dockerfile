@@ -34,9 +34,6 @@ RUN \
 RUN \
   sed -i -E 's/^(\s*)system\(\);/\1unix-stream("\/dev\/log");/' /etc/syslog-ng/syslog-ng.conf
 
-# Create supervisor.conf
-ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
 # Preconfigure setting for packages
 #RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections 
 #RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
@@ -180,6 +177,9 @@ RUN \
   cd misp-modules && \
   pip3 install --upgrade -r REQUIREMENTS && \
   pip3 install --upgrade .
+
+# Create supervisor.conf
+ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Add run script
 ADD run.sh /run.sh
