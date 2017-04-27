@@ -34,7 +34,7 @@ RUN \
 RUN \
   sed -i -E 's/^(\s*)system\(\);/\1unix-stream("\/dev\/log");/' /etc/syslog-ng/syslog-ng.conf
 
-# Create default supervisor.conf
+# Create supervisor.conf
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Preconfigure setting for packages
@@ -180,53 +180,6 @@ RUN \
   cd misp-modules && \
   pip3 install --upgrade -r REQUIREMENTS && \
   pip3 install --upgrade .
-
-# -----------------
-# Supervisord Setup
-# -----------------
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:mysql]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'process_name = mysqld_safe' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'directory = /var/lib/mysql' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command = /usr/bin/mysqld_safe' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'startsecs = 0' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'autorestart = false' >> /etc/supervisor/conf.d/supervisord.conf
-
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:postfix]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'process_name = master' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'directory = /etc/postfix' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command = /usr/sbin/postfix -c /etc/postfix start' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'startsecs = 0' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'autorestart = false' >> /etc/supervisor/conf.d/supervisord.conf
-
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:redis-server]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command=redis-server /etc/redis/redis.conf' >> /etc/supervisor/conf.d/supervisord.conf
-
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:apache2]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command=/bin/bash -c "source /etc/apache2/envvars && exec /usr/sbin/apache2 -D FOREGROUND"' >> /etc/supervisor/conf.d/supervisord.conf
-
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:resque]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command=/bin/bash /var/www/MISP/app/Console/worker/start.sh' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'user = www-data' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'startsecs = 0' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'autorestart = false' >> /etc/supervisor/conf.d/supervisord.conf
-
-RUN \
-  echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo '[program:misp-modules]' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'command=/bin/bash -c "/usr/local/bin/misp-modules -s"' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'user = www-data' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'startsecs = 0' >> /etc/supervisor/conf.d/supervisord.conf && \
-  echo 'autorestart = false' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Add run script
 ADD run.sh /run.sh
