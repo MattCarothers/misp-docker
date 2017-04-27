@@ -235,5 +235,8 @@ RUN chmod 0755 /run.sh
 # Trigger to perform first boot operations
 RUN touch /.firstboot.tmp
 
+# Set the working directory to the MISP home directory
+WORKDIR /var/www/MISP
+
 EXPOSE 443
 CMD ["/run.sh"]
