@@ -45,7 +45,7 @@ ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN \ 
   apt-get install -y libjpeg8-dev apache2 curl git less libapache2-mod-php make mysql-common mysql-client mysql-server php-gd \
                      php-mysql php-dev php-pear php-redis postfix redis-server sudo tree vim zip openssl gnupg gnupg-agent  \
-                     whois python-zmq python-redis && \
+                     php-mbstring whois python-zmq python-redis && \
   apt-get clean
 
 # -----------
