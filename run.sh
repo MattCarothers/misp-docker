@@ -108,6 +108,16 @@ EOSQL
 	sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 50M/" /etc/php/7.0/apache2/php.ini
 	sed -i "s/post_max_size = 8M/post_max_size = 50M/" /etc/php/7.0/apache2/php.ini
 
+	# Configure postfix
+	if [ ! -z "$POSTFIX_MAILNAME" ]; then
+		echo "Setting postfix mailname"
+		sed -i -e "s/^myhostname.*/myhostname = $POSTFIX_MAILNAME/" /etc/postfix/main.cf
+	fi
+	if [ ! -z "$POSTFIX_RELAY" ]; then
+		echo "Setting postfix relay"
+		sed -i -e "s/^relayhost.*/relayhost = $POSTFIX_RELAY/" /etc/postfix/main.cf
+	fi
+
 	# Generate the admin user PGP key
 	if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_ADMIN_PASSPHRASE" ]; then
 		echo "No admin details provided, don't forget to generate the PGP key manually!"
@@ -127,7 +137,7 @@ GPGEOF
 		sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >/dev/null 2>&1
 		rm -f /tmp/gpg.tmp
 	fi
-	echo "Setting default server configuration"
+	echo "Setting default MISP configuration"
 	echo '<?php
 include "/var/www/MISP/app/Config/config.default.php";
 $config["MISP"]["baseurl"] = $_SERVER["MISP_BASEURL"];
