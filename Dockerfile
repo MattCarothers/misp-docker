@@ -17,33 +17,27 @@ MAINTAINER Xavier Mertens <xavier@rootshell.be>
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN echo "DEBUG"
-# Upgrade Ubuntu
+# Preconfigure setting for packages
+#RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections 
+#RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
+
+# Upgrade Ubuntu and install packages
 RUN \
   apt-get update && \
   apt-get dist-upgrade -y && \
+  apt-get install -y cron logrotate supervisor syslog-ng-core \
+	libjpeg8-dev apache2 curl git less libapache2-mod-php make mysql-common mysql-client mysql-server php-gd \
+	php-mysql php-dev php-pear php-redis postfix redis-server sudo tree vim zip openssl gnupg gnupg-agent  \
+	php-mbstring whois python-zmq python-redis \
+	python-dev python-pip libxml2-dev libxslt-dev zlib1g-dev \
+	php-crypt-gpg php-geoip \
+	python3 python3-pip && \
   apt-get autoremove -y && \
-  apt-get clean
-
-# Install Supervisor to manage processes required by MISP
-RUN \
-  apt-get install -y cron logrotate supervisor syslog-ng-core && \
   apt-get clean
 
 # Modify syslog configuration
 RUN \
   sed -i -E 's/^(\s*)system\(\);/\1unix-stream("\/dev\/log");/' /etc/syslog-ng/syslog-ng.conf
-
-# Preconfigure setting for packages
-#RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections 
-#RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
-
-# Install packages
-RUN \ 
-  apt-get install -y libjpeg8-dev apache2 curl git less libapache2-mod-php make mysql-common mysql-client mysql-server php-gd \
-                     php-mysql php-dev php-pear php-redis postfix redis-server sudo tree vim zip openssl gnupg gnupg-agent  \
-                     php-mbstring whois python-zmq python-redis && \
-  apt-get clean
 
 # -----------
 # MySQL Setup
@@ -56,25 +50,21 @@ VOLUME /var/lib/mysql
 RUN sed -i 's/^\(daemonize\s*\)yes\s*$/\1no/g' /etc/redis/redis.conf
 
 # Install PEAR packages
-RUN \
-  pear install Crypt_GPG && \
-  pear install Net_GeoIP
+#RUN \
+#  pear install Crypt_GPG && \
+#  pear install Net_GeoIP
 
 # ---------------
 # MISP Core Setup
 # ---------------
 RUN \
   cd /var/www && \
-  git clone https://github.com/MISP/MISP.git
-
-# Make git ignore filesystem permission differences
-RUN \
+  git clone https://github.com/MISP/MISP.git && \
   cd /var/www/MISP && \
   git config core.filemode false
 
 # Install Mitre's STIX and its dependencies by running the following commands:
 RUN \
-  apt-get install -y python-dev python-pip libxml2-dev libxslt-dev zlib1g-dev && \
   cd /var/www/MISP/app/files/scripts && \
   git clone https://github.com/CybOXProject/python-cybox.git && \
   git clone https://github.com/STIXProject/python-stix.git && \
@@ -115,39 +105,28 @@ RUN \
 # Apache Setup
 # ------------
 
-RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/misp.conf
-RUN a2dissite 000-default
-RUN a2ensite misp
-
-# Enable modules
-RUN a2enmod rewrite
-RUN a2enmod ssl
-
-# Generate a self-signed certificate 
-# Replace it asap by your own!
-RUN \
-  mkdir -p /etc/apache2/ssl && \
-  cd /etc/apache2/ssl && \
-  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout misp.key -out misp.crt -batch
-
-# Enable SSL on the vhost
-RUN \
-  sed -i -E "s/\VirtualHost\s\*:80/VirtualHost *:443/" /etc/apache2/sites-enabled/misp.conf && \
-  sed -i -E "s/ServerSignature\sOff/ServerSignature Off\n\tSSLEngine On\n\tSSLCertificateFile \/etc\/apache2\/ssl\/misp.crt\n\tSSLCertificateKeyFile \/etc\/apache2\/ssl\/misp.key/" /etc/apache2/sites-enabled/misp.conf
+RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/misp.conf && \
+	a2dissite 000-default && \
+	a2ensite misp && \
+	a2enmod rewrite && \
+	a2enmod ssl && \
+	mkdir -p /etc/apache2/ssl && \
+	cd /etc/apache2/ssl && \
+	openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout misp.key -out misp.crt -batch && \
+	sed -i -E "s/\VirtualHost\s\*:80/VirtualHost *:443/" /etc/apache2/sites-enabled/misp.conf && \
+	sed -i -E "s/ServerSignature\sOff/ServerSignature Off\n\tSSLEngine On\n\tSSLCertificateFile \/etc\/apache2\/ssl\/misp.crt\n\tSSLCertificateKeyFile \/etc\/apache2\/ssl\/misp.key/" /etc/apache2/sites-enabled/misp.conf
 
 # ------------------
 # MISP Configuration
 # ------------------
 ADD gpg/.gnupg /var/www/MISP/.gnupg
-RUN \
-  chown -R www-data:www-data /var/www/MISP/.gnupg && \
-  chmod 700 /var/www/MISP/.gnupg && \
-  chmod 0600 /var/www/MISP/.gnupg/*
-
 ADD gpg/gpg.asc /var/www/MISP/app/webroot/gpg.asc
 
 RUN \
-  chown -R www-data:www-data /var/www/MISP/app/webroot/gpg.asc && \
+  chown -R www-data:www-data /var/www/MISP/.gnupg && \
+  chmod 700 /var/www/MISP/.gnupg && \
+  chmod 0600 /var/www/MISP/.gnupg/* && \
+  chown www-data:www-data /var/www/MISP/app/webroot/gpg.asc && \
   chmod 0644 /var/www/MISP/app/webroot/gpg.asc
 
 # Create boostrap.php
@@ -172,7 +151,6 @@ RUN \
 # ------------------------------------
 RUN \
   cd /opt && \
-  apt-get install -y python3 python3-pip && \
   git clone https://github.com/MISP/misp-modules.git && \
   cd misp-modules && \
   pip3 install --upgrade -r REQUIREMENTS && \
