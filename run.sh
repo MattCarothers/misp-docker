@@ -143,9 +143,11 @@ GPGEOF
 	export MISP_BASEURL
 	export MISP_ADMIN_EMAIL
 	export MISP_GPG_PASSPHRASE
+	export MISP_SALT
 	echo '<?php
 include "/var/www/MISP/app/Config/config.default.php";
 $config["MISP"]["baseurl"] = $_SERVER["MISP_BASEURL"];
+$config["Security"]["salt"] = $_SERVER["MISP_SALT"];
 $config["GnuPG"]["email"] = $_SERVER["MISP_ADMIN_EMAIL"];
 $config["GnuPG"]["password"] = $_SERVER["MISP_GPG_PASSPHRASE"];
 $config["GnuPG"]["homedir"] = "/var/www/MISP/.gnupg";
@@ -158,6 +160,9 @@ print var_export($config);
 print ";\n";
 ' > /tmp/setup.php
 	/usr/bin/php /tmp/setup.php > /var/www/MISP/app/Config/config.php
+	chown www-data:www-data /var/www/MISP/app/Config/config.php
+	chmod 0750 /var/www/MISP/app/Config/config.php
+
 	echo '{"redis_host":"localhost","redis_port":"6379","redis_password":"","redis_database":"1","redis_namespace":"mispq","port":50000}' > /var/www/MISP/app/files/scripts/mispzmq/settings.json
 	chown www-data.www-data /var/www/MISP/app/files/scripts/mispzmq/settings.json
 

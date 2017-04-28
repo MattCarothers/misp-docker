@@ -135,17 +135,6 @@ RUN \
   chown www-data:www-data /var/www/MISP/app/Config/bootstrap.default.php && \
   chmod 0750 /var/www/MISP/app/Config/bootstrap.default.php
 
-# Create a config.php
-RUN \
-  cp /var/www/MISP/app/Config/config.default.php /var/www/MISP/app/Config/config.php && \
-  chown www-data:www-data /var/www/MISP/app/Config/config.php && \
-  chmod 0750 /var/www/MISP/app/Config/config.php
-
-# Replace the default salt
-RUN \
-  cd /var/www/MISP/app/Config && \
-  sed -i -E "s/'salt'\s=>\s'(\S+)'/'salt' => '`openssl rand -base64 32|tr "/" "-"`'/" config.php
-
 # ------------------------------------
 # Install MISP Modules (New in 2.4.28)
 # ------------------------------------
