@@ -170,9 +170,10 @@ print ";\n";
 	cat <<__WELCOME__
 Congratulations!
 Your MISP docker has been successfully booted for the first time.
-Don't forget:
-- Reconfigure postfix to match your environment
-- Change the MISP admin email address to $MISP_ADMIN_EMAIL
+You may now log in via https using the default credentials.
+
+Username: admin@admin.test
+Password: admin
 
 __WELCOME__
 	rm -f /.firstboot.tmp
