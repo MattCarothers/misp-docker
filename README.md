@@ -17,13 +17,9 @@ The build is based on Ubuntu and will install all the required components. The f
 ```
 # git clone https://github.com/MattCarothers/misp-docker
 # cd misp-docker
-# docker build -t misp/misp .
-```
-(Choose your MySQL root password at build time)
 
-# Running the image
+Edit env.txt to set configuration options for the image.
 
-First, create a configuration file which will contain your MySQL passwords:
 ```
 # cat env.txt
 # MySQL passwords
@@ -49,6 +45,8 @@ MISP_SALT=your_salt_here
 POSTFIX_MAILNAME=misp.local
 POSTFIX_RELAY=smtp.local
 ``` 
+# docker build -t misp/misp .
+```
 
 Then boot the container:
 ```
