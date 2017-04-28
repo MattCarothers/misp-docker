@@ -40,7 +40,7 @@ MISP_SALT=your_salt_here
 
 # Mailname and relay for postfix.  If you don't set one, the mailname will
 # be a docker-generated random hostname, which may or may not impact your
-# MISP's ability to delivery email past spam filters.
+# MISP's ability to deliver email past spam filters.
 POSTFIX_MAILNAME=misp.local
 POSTFIX_RELAY=smtp.local
 
