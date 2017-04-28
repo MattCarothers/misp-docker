@@ -20,7 +20,6 @@ The build is based on Ubuntu and will install all the required components. The f
 
 Edit env.txt to set configuration options for the image.
 
-```
 # cat env.txt
 # MySQL passwords
 MYSQL_ROOT_PASSWORD=my_strong_root_pw
@@ -44,7 +43,7 @@ MISP_SALT=your_salt_here
 # MISP's ability to delivery email past spam filters.
 POSTFIX_MAILNAME=misp.local
 POSTFIX_RELAY=smtp.local
-``` 
+
 # docker build -t misp/misp .
 ```
 
