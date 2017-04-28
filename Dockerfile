@@ -164,10 +164,15 @@ ADD run.sh /run.sh
 RUN chmod 0755 /run.sh
 
 # Trigger to perform first boot operations
-RUN touch /.firstboot.tmp
+ADD env.txt /.firstboot.tmp
 
 # Set the working directory to the MISP home directory
 WORKDIR /var/www/MISP
+
+# Set the gpg home dir so we don't have to use --homedir on the command line
+# Note: su -s /bin/bash www-data before running any gpg commands in the container
+#       to avoid messing up the file ownership
+ENV GNUPGHOME /var/www/MISP/.gnupg
 
 EXPOSE 443
 CMD ["/run.sh"]

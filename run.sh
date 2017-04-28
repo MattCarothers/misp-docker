@@ -6,6 +6,8 @@ if [ -r /.firstboot.tmp ]; then
 
 	echo "Initial docker configuration, please be patient ..."
 
+	. /.firstboot.tmp
+
 	# Set MYSQL_ROOT_PASSWORD
 	if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
 		echo "MYSQL_ROOT_PASSWORD is not set, use default value 'root'"
@@ -119,7 +121,7 @@ EOSQL
 	fi
 
 	# Generate the admin user PGP key
-	if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_ADMIN_PASSPHRASE" ]; then
+	if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_GPG_PASSPHRASE" ]; then
 		echo "No admin details provided, don't forget to generate the PGP key manually!"
 	else
 		echo "Generating admin PGP key ... (please be patient, we need some entropy)"
@@ -130,7 +132,7 @@ Key-Length: 2048
 Name-Real: MISP Admin
 Name-Email: $MISP_ADMIN_EMAIL
 Expire-Date: 0
-Passphrase: $MISP_ADMIN_PASSPHRASE
+Passphrase: $MISP_GPG_PASSPHRASE
 %commit
 %echo Done
 GPGEOF
@@ -138,11 +140,14 @@ GPGEOF
 		rm -f /tmp/gpg.tmp
 	fi
 	echo "Setting default MISP configuration"
+	export MISP_BASEURL
+	export MISP_ADMIN_EMAIL
+	export MISP_GPG_PASSPHRASE
 	echo '<?php
 include "/var/www/MISP/app/Config/config.default.php";
 $config["MISP"]["baseurl"] = $_SERVER["MISP_BASEURL"];
 $config["GnuPG"]["email"] = $_SERVER["MISP_ADMIN_EMAIL"];
-$config["GnuPG"]["password"] = $_SERVER["MISP_ADMIN_PASSPHRASE"];
+$config["GnuPG"]["password"] = $_SERVER["MISP_GPG_PASSPHRASE"];
 $config["GnuPG"]["homedir"] = "/var/www/MISP/.gnupg";
 $config["Plugin"]["ZeroMQ_enable"] = true;
 $config["Plugin"]["Enrichment_services_enable"] = true;
@@ -170,5 +175,4 @@ fi
 
 # Start supervisord 
 echo "Starting supervisord..."
-cd /
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
