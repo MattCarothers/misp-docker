@@ -1,25 +1,19 @@
-#
 # Dockerfile to build a MISP (https://github.com/MISP/MISP) container
 #
-# Original docker file by eg5846 (https://github.com/eg5846)
+# Original docker file by xme (https://github.com/xme)
 #
-# 2016/03/03 - First release
-# 
 # To build your container:
 #
-# # git clone https://github.com/xme/misp-docker
-# # docker build -t <tag> .
+# git clone https://github.com/MattCarothers/misp-docker
+# Edit env.txt
+# docker build -t misp/misp .
 
 # We are based on Ubuntu:16.04
 FROM ubuntu:16.04
-MAINTAINER Xavier Mertens <xavier@rootshell.be>
+MAINTAINER Matt Carothers <matt.carothers@cox.com>
 
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
-
-# Preconfigure setting for packages
-#RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections 
-#RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
 
 # Upgrade Ubuntu and install packages
 RUN \
@@ -48,11 +42,6 @@ VOLUME /var/lib/mysql
 # Redis Setup
 # -----------
 RUN sed -i 's/^\(daemonize\s*\)yes\s*$/\1no/g' /etc/redis/redis.conf
-
-# Install PEAR packages
-#RUN \
-#  pear install Crypt_GPG && \
-#  pear install Net_GeoIP
 
 # ---------------
 # MISP Core Setup
