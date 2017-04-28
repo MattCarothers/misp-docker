@@ -38,7 +38,7 @@ MISP_BASEURL=https://misp.local
 # If you don't provide a salt, MISP will generate one automatically
 MISP_SALT=your_salt_here
 
-# Mailname and relay for postfix.  If you don't set them, the mailname will
+# Mailname and relay for postfix.  If you don't set one, the mailname will
 # be a docker-generated random hostname, which may or may not impact your
 # MISP's ability to delivery email past spam filters.
 POSTFIX_MAILNAME=misp.local
