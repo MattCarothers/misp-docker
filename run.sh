@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -x
 
 function log_heading ()
 {
@@ -52,14 +53,21 @@ if [ -r /.firstboot.tmp ]; then
 	log_info "Setting MySQL root password to $MYSQL_ROOT_PASSWORD"
 	mysqladmin password $MYSQL_ROOT_PASSWORD >/dev/null 2>&1 | true
 
-	# Add the debian-sys-maint user so init scripts and log rotation will work.  This
-	# step is redundant if we didn't just create a new database, but it doesn't hurt.
-	log_info "Fixing debian-sys-maint account"
-	SYS_MAINT_PASSWORD=`grep -m 1 password /etc/mysql/debian.cnf | awk '{print $3}'`
-	mysql -u root --password="$MYSQL_ROOT_PASSWORD" \
-		-e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$SYS_MAINT_PASSWORD' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+	# If we're using MariaDB, we need to set passwords in /etc/mysql/debian.cnf
+	# for the init script to work.
+	sed -i -e "s/password = $/password = $MYSQL_ROOT_PASSWORD/" /etc/mysql/debian.cnf
 
-	ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" -h 127.0.0.1 -P 3306 -e 'SHOW DATABASES'`
+	# If this is MySQL rather than MariaDB, we need to add the debian-sys-maint
+	# user so init scripts and log rotation will work.  This step is redundant
+	# if we didn't just create a new database, but it doesn't hurt.
+	SYS_MAINT_PASSWORD=`grep -m 1 password /etc/mysql/debian.cnf | awk '{print $3}'`
+	if [ ! -z "$SYS_MAINT_PASSWORD" ]; then
+		log_info "Fixing debian-sys-maint account"
+		mysql -u root --password="$MYSQL_ROOT_PASSWORD" \
+			-e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$SYS_MAINT_PASSWORD' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+	fi
+
+	ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" -e 'SHOW DATABASES'`
 	if [ $? -eq 0 ]; then
 		log_info "Connected to database successfully!"
 		found=0
@@ -77,7 +85,7 @@ create database misp;
 grant usage on *.* to misp identified by "$MYSQL_MISP_PASSWORD";
 grant all privileges on misp.* to misp;
 EOSQL
-			ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" -h 127.0.0.1 -P 3306 2>&1 < /tmp/create_misp_database.sql`
+			ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" 2>&1 < /tmp/create_misp_database.sql`
 			if [ $? -eq 0 ]; then
 				log_info "Created database misp successfully!"
 

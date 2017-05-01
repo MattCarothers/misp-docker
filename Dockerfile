@@ -12,6 +12,9 @@
 FROM ubuntu:16.04
 MAINTAINER Matt Carothers <matt.carothers@cox.com>
 
+# If you prefer MariaDB, build the image with --build-arg DB=mariadb
+ARG DB=mysql
+
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -20,7 +23,7 @@ RUN \
   apt-get update && \
   apt-get dist-upgrade -y && \
   apt-get install -y cron logrotate supervisor syslog-ng-core \
-	libjpeg8-dev apache2 curl git less libapache2-mod-php make mysql-common mysql-client mysql-server php-gd \
+	libjpeg8-dev apache2 curl git less libapache2-mod-php make ${DB}-common ${DB}-client ${DB}-server php-gd \
 	php-mysql php-dev php-pear php-redis postfix redis-server sudo tree vim zip openssl gnupg gnupg-agent  \
 	php-mbstring whois python-zmq python-redis \
 	python-dev python-pip libxml2-dev libxslt-dev zlib1g-dev \
