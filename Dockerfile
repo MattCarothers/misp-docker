@@ -85,6 +85,16 @@ RUN \
   chmod -R g+ws files && \
   chmod -R g+ws files/scripts/tmp
 
+# ------------------------------------
+# Install MISP Modules (New in 2.4.28)
+# ------------------------------------
+RUN \
+  cd /opt && \
+  git clone https://github.com/MISP/misp-modules.git && \
+  cd misp-modules && \
+  pip3 install --upgrade -r REQUIREMENTS && \
+  pip3 install --upgrade .
+
 # ------------
 # Apache Setup
 # ------------
@@ -103,31 +113,22 @@ RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/mis
 # ------------------
 # MISP Configuration
 # ------------------
-ADD gpg/.gnupg /var/www/MISP/.gnupg
-ADD gpg/gpg.asc /var/www/MISP/app/webroot/gpg.asc
+#ADD gpg/.gnupg /var/www/MISP/.gnupg
+#ADD gpg/gpg.asc /var/www/MISP/app/webroot/gpg.asc
 
 RUN \
-  chown -R www-data:www-data /var/www/MISP/.gnupg && \
-  chmod 700 /var/www/MISP/.gnupg && \
-  chmod 0600 /var/www/MISP/.gnupg/* && \
-  chown www-data:www-data /var/www/MISP/app/webroot/gpg.asc && \
-  chmod 0644 /var/www/MISP/app/webroot/gpg.asc
+  mkdir -p /var/www/MISP/.gnupg && \
+  chown www-data:www-data /var/www/MISP/.gnupg && \
+  chmod 700 /var/www/MISP/.gnupg
+#  chmod 0600 /var/www/MISP/.gnupg/*
+#  chown www-data:www-data /var/www/MISP/app/webroot/gpg.asc && \
+#  chmod 0644 /var/www/MISP/app/webroot/gpg.asc
 
 # Create boostrap.php
 RUN \
   cp /var/www/MISP/app/Config/bootstrap.default.php /var/www/MISP/app/Config/bootstrap.php && \
   chown www-data:www-data /var/www/MISP/app/Config/bootstrap.default.php && \
   chmod 0750 /var/www/MISP/app/Config/bootstrap.default.php
-
-# ------------------------------------
-# Install MISP Modules (New in 2.4.28)
-# ------------------------------------
-RUN \
-  cd /opt && \
-  git clone https://github.com/MISP/misp-modules.git && \
-  cd misp-modules && \
-  pip3 install --upgrade -r REQUIREMENTS && \
-  pip3 install --upgrade .
 
 # Make a copy of the default config files so we can initialize
 # /var/www/MISP/app/Config if the container is run with the directory mounted
