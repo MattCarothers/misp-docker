@@ -91,6 +91,7 @@ EOSQL
 
 	# MISP configuration
 	echo "Creating MISP configuration files ..."
+	cp -an /var/www/MISP/app/.Config.dist/* /var/www/MISP/app/Config/
 	cd /var/www/MISP/app/Config
 	cp -a database.default.php database.php
 	sed -i "s/localhost/127.0.0.1/" database.php
@@ -139,12 +140,13 @@ GPGEOF
 		sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >/dev/null 2>&1
 		rm -f /tmp/gpg.tmp
 	fi
-	echo "Setting default MISP configuration"
-	export MISP_BASEURL
-	export MISP_ADMIN_EMAIL
-	export MISP_GPG_PASSPHRASE
-	export MISP_SALT
-	echo '<?php
+	if [ -z "`diff -q /var/www/MISP/app/Config/config.default.php /var/www/MISP/app/Config/config.php`" ]; then
+		echo "Setting default MISP configuration"
+		export MISP_BASEURL
+		export MISP_ADMIN_EMAIL
+		export MISP_GPG_PASSPHRASE
+		export MISP_SALT
+		echo '<?php
 include "/var/www/MISP/app/Config/config.default.php";
 $config["MISP"]["baseurl"] = $_SERVER["MISP_BASEURL"];
 $config["Security"]["salt"] = $_SERVER["MISP_SALT"];
@@ -159,9 +161,12 @@ print "<?php\n\$config = ";
 print var_export($config);
 print ";\n";
 ' > /tmp/setup.php
-	/usr/bin/php /tmp/setup.php > /var/www/MISP/app/Config/config.php
-	chown www-data:www-data /var/www/MISP/app/Config/config.php
-	chmod 0750 /var/www/MISP/app/Config/config.php
+		/usr/bin/php /tmp/setup.php > /var/www/MISP/app/Config/config.php
+		chown www-data:www-data /var/www/MISP/app/Config/config.php
+		chmod 0750 /var/www/MISP/app/Config/config.php
+	else
+		echo "A non-default MISP configuration already exists in /var/www/MISP/app/Config/"
+	fi
 
 	echo '{"redis_host":"localhost","redis_port":"6379","redis_password":"","redis_database":"1","redis_namespace":"mispq","port":50000}' > /var/www/MISP/app/files/scripts/mispzmq/settings.json
 	chown www-data.www-data /var/www/MISP/app/files/scripts/mispzmq/settings.json

@@ -34,11 +34,6 @@ RUN \
   sed -i -E 's/^(\s*)system\(\);/\1unix-stream("\/dev\/log");/' /etc/syslog-ng/syslog-ng.conf
 
 # -----------
-# MySQL Setup
-# -----------
-VOLUME /var/lib/mysql
-
-# -----------
 # Redis Setup
 # -----------
 RUN sed -i 's/^\(daemonize\s*\)yes\s*$/\1no/g' /etc/redis/redis.conf
@@ -134,6 +129,12 @@ RUN \
   pip3 install --upgrade -r REQUIREMENTS && \
   pip3 install --upgrade .
 
+# Make a copy of the default config files so we can initialize
+# /var/www/MISP/app/Config if the container is run with the directory mounted
+# as an external volume (e.g. -v /some/dir:/var/www/MISP/app/Config)
+RUN \
+  cp -a /var/www/MISP/app/Config /var/www/MISP/app/.Config.dist
+
 # Create supervisor.conf
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
@@ -151,6 +152,11 @@ WORKDIR /var/www/MISP
 # Note: su -s /bin/bash www-data before running any gpg commands in the container
 #       to avoid messing up the file ownership
 ENV GNUPGHOME /var/www/MISP/.gnupg
+
+# Create volumes for data we want to persist
+VOLUME /var/www/MISP/app/Config
+VOLUME /var/www/MISP/.gnupg
+VOLUME /var/lib/mysql
 
 EXPOSE 443
 CMD ["/run.sh"]
