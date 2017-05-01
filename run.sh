@@ -122,11 +122,14 @@ EOSQL
 	fi
 
 	# Generate the admin user PGP key
-	if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_GPG_PASSPHRASE" ]; then
-		echo "No admin details provided, don't forget to generate the PGP key manually!"
-	else
-		echo "Generating admin PGP key ... (please be patient, we need some entropy)"
-		cat >/tmp/gpg.tmp <<GPGEOF
+	if [ ! -f /var/www/MISP/.gnupg/secring.gpg ]; then
+		if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_GPG_PASSPHRASE" ]; then
+			echo "No admin details provided, don't forget to generate the PGP key manually!"
+		else
+			echo "Generating admin PGP key ... (please be patient, we need some entropy)"
+			chown www-data.www-data /var/www/MISP/.gnupg
+			chmod 700 /var/www/MISP/.gnupg
+			cat >/tmp/gpg.tmp <<GPGEOF
 %echo Generating a basic OpenPGP key
 Key-Type: RSA
 Key-Length: 2048
@@ -137,10 +140,16 @@ Passphrase: $MISP_GPG_PASSPHRASE
 %commit
 %echo Done
 GPGEOF
-		sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >/dev/null 2>&1
-		rm -f /tmp/gpg.tmp
+			sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >/dev/null 2>&1
+			rm -f /tmp/gpg.tmp
+		fi
+	else
+		echo "A secret keyring already exists in /var/www/MISP/.gnupg"
 	fi
-	if [ -z "`diff -q /var/www/MISP/app/Config/config.default.php /var/www/MISP/app/Config/config.php`" ]; then
+
+	# Check to see if config.php has been changed from default.
+	# If not, generate a new one.
+	if [ ! -f /var/www/MISP/app/Config/config.php ]; then
 		echo "Setting default MISP configuration"
 		export MISP_BASEURL
 		export MISP_ADMIN_EMAIL
@@ -165,7 +174,7 @@ print ";\n";
 		chown www-data:www-data /var/www/MISP/app/Config/config.php
 		chmod 0750 /var/www/MISP/app/Config/config.php
 	else
-		echo "A non-default MISP configuration already exists in /var/www/MISP/app/Config/"
+		echo "Not creating a new MISP config because one already exists in /var/www/MISP/app/Config/"
 	fi
 
 	echo '{"redis_host":"localhost","redis_port":"6379","redis_password":"","redis_database":"1","redis_namespace":"mispq","port":50000}' > /var/www/MISP/app/files/scripts/mispzmq/settings.json
