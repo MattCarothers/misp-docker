@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-set -x
+#set -x
 
 function log_heading ()
 {
@@ -42,7 +42,14 @@ if [ -r /.firstboot.tmp ]; then
 	# if the container was started with -v <some dir>:/var/lib/mysql
 	if [ ! -d /var/lib/mysql/mysql ]; then
 		log_info "/var/lib/mysql is empty.  Creating a new MySQL database."
-		mysqld --initialize-insecure
+		# Is this MariaDB?
+		if [ -z "`mysql -V | grep MariaDB`" ]; then
+			log_info "Using MySQL initialization"
+			mysqld --initialize-insecure
+		else
+			log_info "Using MariaDB initialization"
+			mysql_install_db --user=mysql --datadir=/var/lib/mysql
+		fi
 	fi
 	
 	# Create a database and user  
