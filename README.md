@@ -64,7 +64,7 @@ image with it like this:
 
 Then boot the container:
 ```
-# docker run -d -p 443:443 -v /dev/urandom:/dev/random --restart=always --name misp misp/misp
+# docker run -d -p 443:443 -v /dev/urandom:/dev/random --restart=unless-stopped --name misp misp/misp
 ```
 
 Note: the volume mapping is /dev/urandom is required to generate enough entropy to create the PGP key.
@@ -75,14 +75,14 @@ For a production deployment, you probably want the database, gpg keyrings, and M
 	-v /opt/misp/mysql:/var/lib/mysql \
 	-v /opt/misp/gnupg:/var/www/MISP/.gnupg \
 	-v /opt/misp/config:/var/www/MISP/app/Config \
-	--restart=always --name misp misp/misp
+	--restart=unless-stopped --name misp misp/misp
 ```
 
 The MySQL database directory, gnupg home, and MISP config directory are all declared as volumes in the Dockerfile, so even if you don't mount them externally, you can still remove the container without losing the data.  It will just be more complicated to mount it in a new container.  See http://container-solutions.com/understanding-volumes-docker/ for more information on how docker volumes work.
 
 If you have a real TLS certificate and want to use that instead of the self-signed cert, name your certificate "misp.crt" and your key "misp.key," and put them in a volume mapped to /etc/apache2/ssl:
 ```
-# docker run -d -p 443:443 -v /dev/urandom:/dev/random -v /opt/misp/certs:/etc/apache2/ssl --restart=always --name misp misp/misp
+# docker run -d -p 443:443 -v /dev/urandom:/dev/random -v /opt/misp/certs:/etc/apache2/ssl --restart=unless-stopped --name misp misp/misp
 ```
 
 # Post-boot steps
