@@ -55,7 +55,9 @@ MISP_GPG_PASSPHRASE=abc123
 
 # docker build -t misp/misp .
 
-If you wish to use MariaDB instead of MySQL (necessary if you're attaching a MariaDB database directory from a previous container), you can build your image with it like this:
+If you wish to use MariaDB instead of MySQL (necessary if you're attaching
+a MariaDB database directory from a previous container), you can build your
+image with it like this:
 
 # docker build --build-arg DB=mariadb -t misp/misp .
 ```
