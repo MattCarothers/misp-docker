@@ -82,7 +82,9 @@ The MySQL database directory, gnupg home, and MISP config directory are all decl
 
 If you have a real TLS certificate and want to use that instead of the self-signed cert, name your certificate "misp.crt" and your key "misp.key," and put them in a volume mapped to /etc/apache2/ssl:
 ```
-# docker run -d -p 443:443 -v /dev/urandom:/dev/random -v /opt/misp/certs:/etc/apache2/ssl --restart=unless-stopped --name misp misp/misp
+# docker run -d -p 443:443 -v /dev/urandom:/dev/random \
+	-v /opt/misp/certs:/etc/apache2/ssl --restart=unless-stopped \
+	--name misp misp/misp
 ```
 
 # Post-boot steps
