@@ -20,7 +20,6 @@ The build is based on Ubuntu and will install all the required components. The f
 
 Edit env.txt to set configuration options for the image.
 
-# cat env.txt
 # MySQL passwords
 MYSQL_ROOT_PASSWORD=my_strong_root_pw
 MYSQL_MISP_PASSWORD=my_strong_misp_pw
@@ -41,7 +40,11 @@ MISP_GPG_PASSPHRASE=abc123
 # the URL you use when you log in for the first time.
 #MISP_BASEURL=https://misp.local
 
-# If you don't provide a salt, MISP will generate one automatically
+# If you don't provide a salt, MISP will generate one automatically.
+# Setting this explicitly is important if you're going to attach a
+# database from a previous MISP container, and you didn't preserve
+# /var/www/MISP/app/Config/config.php.  If this is a fresh install,
+# you don't need to set it.
 #MISP_SALT=your_salt_here
 
 # Mailname and relay for postfix.  If you don't set one, the mailname will
@@ -51,6 +54,10 @@ MISP_GPG_PASSPHRASE=abc123
 #POSTFIX_RELAY=smtp.local
 
 # docker build -t misp/misp .
+
+If you wish to use MariaDB instead of MySQL (necessary if you're attaching a MariaDB database directory from a previous container), you can build your image with it like this:
+
+# docker build --build-arg DB=mariadb -t misp/misp .
 ```
 
 Then boot the container:
