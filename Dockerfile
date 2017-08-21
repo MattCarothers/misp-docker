@@ -62,6 +62,14 @@ RUN \
   git checkout v1.1.1.4 && \
   python setup.py install
 
+# Install mixbox to accomodate the new STIX dependencies:
+RUN \
+  cd /var/www/MISP/app/files/scripts/ && \
+  git clone https://github.com/CybOXProject/mixbox.git && \
+  cd /var/www/MISP/app/files/scripts/mixbox && \
+  git checkout v1.0.2 && \
+  sudo python setup.py install
+
 # CakePHP is now included as a submodule of MISP, execute the following commands to let git fetch it
 RUN \
   cd /var/www/MISP && \
