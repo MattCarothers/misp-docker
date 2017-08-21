@@ -52,43 +52,53 @@ if [ -r /.firstboot.tmp ]; then
 		log_info "MYSQL_MISP_PASSWORD is set to '$MYSQL_MISP_PASSWORD'"
 	fi
 
-	# Initialize the MySQL database directory if needed.  It will be empty
-	# if the container was started with -v <some dir>:/var/lib/mysql
-	if [ ! -d /var/lib/mysql/mysql ]; then
-		log_info "/var/lib/mysql is empty.  Creating a new MySQL database."
-		# Is this MariaDB?
-		if [ -z "`mysql -V | grep MariaDB`" ]; then
-			log_info "Using MySQL initialization"
-			mysqld --initialize-insecure
-		else
-			log_info "Using MariaDB initialization"
-			mysql_install_db --user=mysql --datadir=/var/lib/mysql
+        # Are we connecting to a remote MySQL or a local one?  If local, we
+        # need to start the local MySQL and set passwords.
+	if [ -z "$MYSQL_HOST" ]; then
+		# Initialize the MySQL database directory if needed.  It will be empty
+		# if the container was started with -v <some dir>:/var/lib/mysql
+		if [ ! -d /var/lib/mysql/mysql ]; then
+			log_info "/var/lib/mysql is empty.  Creating a new MySQL database."
+			# Is this MariaDB?
+			if [ -z "`mysql -V | grep MariaDB`" ]; then
+				log_info "Using MySQL initialization"
+				mysqld --initialize-insecure
+			else
+				log_info "Using MariaDB initialization"
+				mysql_install_db --user=mysql --datadir=/var/lib/mysql
+			fi
 		fi
-	fi
-	
-	# Create a database and user  
-	log_info "Starting MySQL"
-	service mysql start
+		
+		# Create a database and user  
+		log_info "Starting MySQL"
+		service mysql start
 
-	# If the MySQL root password is empty, this is a fresh install, and we need to set it
-	log_info "Setting MySQL root password to $MYSQL_ROOT_PASSWORD"
-	mysqladmin password $MYSQL_ROOT_PASSWORD >/dev/null 2>&1 | true
+		# If the MySQL root password is empty, this is a fresh install, and we need to set it
+		log_info "Setting MySQL root password to $MYSQL_ROOT_PASSWORD"
+		mysqladmin password $MYSQL_ROOT_PASSWORD >/dev/null 2>&1 | true
 
-	# If we're using MariaDB, we need to set passwords in /etc/mysql/debian.cnf
-	# for the init script to work.
-	sed -i -e "s/password = $/password = $MYSQL_ROOT_PASSWORD/" /etc/mysql/debian.cnf
+		# If we're using MariaDB, we need to set passwords in /etc/mysql/debian.cnf
+		# for the init script to work.
+		sed -i -e "s/password = $/password = $MYSQL_ROOT_PASSWORD/" /etc/mysql/debian.cnf
 
-	# If this is MySQL rather than MariaDB, we need to add the debian-sys-maint
-	# user so init scripts and log rotation will work.  This step is redundant
-	# if we didn't just create a new database, but it doesn't hurt.
-	SYS_MAINT_PASSWORD=`grep -m 1 password /etc/mysql/debian.cnf | awk '{print $3}'`
-	if [ ! -z "$SYS_MAINT_PASSWORD" ]; then
-		log_info "Fixing debian-sys-maint account"
-		mysql -u root --password="$MYSQL_ROOT_PASSWORD" \
-			-e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$SYS_MAINT_PASSWORD' WITH GRANT OPTION; FLUSH PRIVILEGES;"
-	fi
+		# If this is MySQL rather than MariaDB, we need to add the debian-sys-maint
+		# user so init scripts and log rotation will work.  This step is redundant
+		# if we didn't just create a new database, but it doesn't hurt.
+		SYS_MAINT_PASSWORD=`grep -m 1 password /etc/mysql/debian.cnf | awk '{print $3}'`
+		if [ ! -z "$SYS_MAINT_PASSWORD" ]; then
+			log_info "Fixing debian-sys-maint account"
+			mysql -u root --password="$MYSQL_ROOT_PASSWORD" \
+				-e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$SYS_MAINT_PASSWORD' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+		fi
+	else
+		# Remote host provided.  Make sure we have a port.
+                if [ -z "$MYSQL_PORT" ]; then
+                        MYSQL_PORT=3306
+                fi
+		MYSQL_FLAGS="-h $MYSQL_HOST -P $MYSQL_PORT"
+        fi
 
-	ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" -e 'SHOW DATABASES'`
+	ret=`mysql $MYSQL_FLAGS -u root --password="$MYSQL_ROOT_PASSWORD" -e 'SHOW DATABASES'`
 	if [ $? -eq 0 ]; then
 		log_info "Connected to database successfully!"
 		found=0
@@ -100,18 +110,23 @@ if [ -r /.firstboot.tmp ]; then
 		if [ $found -eq 1 ]; then
 			log_info "Database misp found"
 		else
-			log_info "Database misp not found.  Creating now one."
+			log_info "Database misp not found.  Creating new one."
+			# We need to know what ip we're connecting from so we
+			# can grant the misp user privileges correctly.
+			log_info "Finding our source host."
+			SRC_HOST=`mysql $MYSQL_FLAGS -u root --password="$MYSQL_ROOT_PASSWORD" -e "SELECT host FROM information_schema.processlist WHERE user='root'" --disable-column-names -B | head -1 | cut -f 1 -d :`
+			log_info "Our source is $SRC_HOST"
 			cat > /tmp/create_misp_database.sql <<-EOSQL
-create database misp;
-grant usage on *.* to misp identified by "$MYSQL_MISP_PASSWORD";
-grant all privileges on misp.* to misp;
+CREATE DATABASE misp;
+GRANT USAGE ON *.* TO misp@'$SRC_HOST' IDENTIFIED BY '$MYSQL_MISP_PASSWORD';
+GRANT ALL PRIVILEGES ON misp.* TO misp@'$SRC_HOST';
 EOSQL
-			ret=`mysql -u root --password="$MYSQL_ROOT_PASSWORD" 2>&1 < /tmp/create_misp_database.sql`
+			ret=`mysql $MYSQL_FLAGS -u root --password="$MYSQL_ROOT_PASSWORD" 2>&1 < /tmp/create_misp_database.sql`
 			if [ $? -eq 0 ]; then
 				log_info "Created database misp successfully!"
 
 				log_info "Importing /var/www/MISP/INSTALL/MYSQL.sql"
-				ret=`mysql -u misp --password="$MYSQL_MISP_PASSWORD" misp -h 127.0.0.1 -P 3306 2>&1 < /var/www/MISP/INSTALL/MYSQL.sql`
+				ret=`mysql $MYSQL_FLAGS -u misp --password="$MYSQL_MISP_PASSWORD" misp 2>&1 < /var/www/MISP/INSTALL/MYSQL.sql`
 				if [ $? -eq 0 ]; then
 					log_info "Imported /var/www/MISP/INSTALL/MYSQL.sql successfully"
 				else
@@ -128,9 +143,15 @@ EOSQL
 		log_info $ret
 	fi
 
-	# Stop the MySQL server here because we're going to let
-	# supervisord manage the process instead.
-	service mysql stop
+	# Different cleanup actions if MySQL is remote or local
+	if [ -z "$MYSQL_HOST" ]; then
+		# Stop the MySQL server here because we're going to let
+		# supervisord manage the process instead.
+		service mysql stop
+	else
+		# No need to start the local mysql if we're remote
+		rm /etc/supervisor/conf.d/mysqld.conf
+	fi
 
 	# MISP configuration
 	log_heading "Creating MISP configuration files"
@@ -139,9 +160,17 @@ EOSQL
 	if [ ! -f /var/www/MISP/app/Config/database.php ]; then
 		log_info "Creating a default database.php"
 		cp -a database.default.php database.php
-		sed -i "s/localhost/127.0.0.1/" database.php
+		if [ -z "$MYSQL_HOST" ]; then
+			sed -i "s/localhost/127.0.0.1/" database.php
+		else
+			sed -i "s/localhost/$MYSQL_HOST/" database.php
+		fi
+		if [ -z "$MYSQL_PORT" ]; then
+			sed -i "s/8889/3306/" database.php
+		else
+			sed -i "s/8889/$MYSQL_PORT/" database.php
+		fi
 		sed -i "s/db\s*login/misp/" database.php
-		sed -i "s/8889/3306/" database.php
 		sed -i "s/db\s*password/$MYSQL_MISP_PASSWORD/" database.php
 	else
 		log_info "Using existing database configuration"

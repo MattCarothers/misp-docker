@@ -141,6 +141,7 @@ RUN \
 
 # Create supervisor.conf
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD mysqld.conf /etc/supervisor/conf.d/mysqld.conf
 
 # Add run script
 ADD run.sh /run.sh
