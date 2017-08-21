@@ -66,8 +66,17 @@ Then boot the container:
 ```
 # docker run -d -p 443:443 -v /dev/urandom:/dev/random --restart=unless-stopped --name misp misp/misp
 ```
-
 Note: the volume mapping is /dev/urandom is required to generate enough entropy to create the PGP key.
+
+If you did not supply MySQL passwords in env.txt, the container will prompt you for them on first boot.  You'll need to run it in interactive mode.
+```
+# docker run -it -p 443:443 -v /dev/urandom:/dev/random --restart=unless-stopped --name misp misp/misp
+```
+
+After the container finishes booting, shut it down by pressing ^C or issuing "docker stop" from another window.  Start it back up in the background:
+```
+# docker start misp
+```
 
 For a production deployment, you probably want the database, gpg keyrings, and MISP config to live on the host filesystem so they won't disappear if the container is removed.
 ```

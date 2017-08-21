@@ -24,16 +24,30 @@ if [ -r /.firstboot.tmp ]; then
 
 	# Set MYSQL_ROOT_PASSWORD
 	if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
-		log_info "MYSQL_ROOT_PASSWORD is not set, use default value 'root'"
-		MYSQL_ROOT_PASSWORD=root
+		log_info "MYSQL_ROOT_PASSWORD is not set.  Please enter the root password."
+		read -s -p "Password: " MYSQL_ROOT_PASSWORD
+		echo ""
+		read -s -p "Repeat Password: " TMP_PASSWORD
+		echo ""
+		if [ $MYSQL_ROOT_PASSWORD != $TMP_PASSWORD ]; then
+			echo "Passwords do not match!"
+			exit 1
+		fi
 	else
 		log_info "MYSQL_ROOT_PASSWORD is set to '$MYSQL_ROOT_PASSWORD'" 
 	fi
 
 	# Set MYSQL_MISP_PASSWORD
 	if [ -z "$MYSQL_MISP_PASSWORD" ]; then
-		log_info "MYSQL_MISP_PASSWORD is not set, use default value 'misp'"
-		MYSQL_MISP_PASSWORD=misp
+		log_info "MYSQL_MISP_PASSWORD is not set.  Please enter the misp password."
+		read -s -p "Password: " MYSQL_MISP_PASSWORD
+		echo ""
+		read -s -p "Repeat Password: " TMP_PASSWORD
+		echo ""
+		if [ $MYSQL_MISP_PASSWORD != $TMP_PASSWORD ]; then
+			echo "Passwords do not match!"
+			exit 1
+		fi
 	else
 		log_info "MYSQL_MISP_PASSWORD is set to '$MYSQL_MISP_PASSWORD'"
 	fi
