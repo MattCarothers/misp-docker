@@ -106,6 +106,24 @@ RUN \
   pip3 install --upgrade -r REQUIREMENTS && \
   pip3 install --upgrade .
 
+# ---------------------------------
+# Install additional python modules
+# ---------------------------------
+RUN \
+  pip install pymisp && \
+  apt-get -y install libfuzzy-dev && \
+  pip install git+https://github.com/kbandla/pydeep.git && \
+  pip install python-magic && \
+  pip install setuptools --upgrade && \
+  pip install lief
+
+
+# Update submodules to ensure web UI updates will work
+RUN \
+  for dir in PyMISP app/Lib/cakephp app/files/misp-galaxy app/files/taxonomies app/files/warninglists; do \
+    cd /var/www/MISP/$dir && git checkout -- .; \
+  done
+
 # ------------
 # Apache Setup
 # ------------

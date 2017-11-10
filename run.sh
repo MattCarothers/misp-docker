@@ -15,6 +15,11 @@ function log_info ()
 }
 
 if [ -r /.firstboot.tmp ]; then
+	log_heading "Updating MISP"
+	cd /var/www/MISP
+	git pull
+	git submodule init
+	git submodule update
 
 	log_heading "Initial docker configuration"
 
