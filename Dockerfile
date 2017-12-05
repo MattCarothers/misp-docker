@@ -133,6 +133,7 @@ RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/mis
 	a2ensite misp && \
 	a2enmod rewrite && \
 	a2enmod ssl && \
+	a2enmod headers && \
 	mkdir -p /etc/apache2/ssl && \
 	cd /etc/apache2/ssl && \
 	openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout misp.key -out misp.crt -batch && \
